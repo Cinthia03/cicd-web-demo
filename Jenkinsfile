@@ -88,9 +88,10 @@ pipeline {
             echo "CI/CD falló. Revisar logs del build."
         }
 
-        always  {
-            sh 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status
-                }}\t{{.Ports}}" || true'
+        always {
+            sh """
+            docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' || true
+            """
         }
     }
 }
