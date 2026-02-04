@@ -5,8 +5,8 @@ services:
     ports:
       - "8081:80"
 
-web-production:
-  image: cicd-web-demo:production
-  container_name: cicd_web_production
-  ports:
-    - "8082:80"
+  web-production:
+    image: cicd-web-demo:production
+    container_name: cicd_web_production
+    ports:
+      - "8082:80"
