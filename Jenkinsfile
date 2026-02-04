@@ -16,21 +16,19 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "Descargando el código..."
-                // Jenkins ya hace checkout si el job está configurado con SCM,
-                // pero este mensaje ayuda a los estudiantes a entender la etapa.
-                }
+                checkout scm
+                echo "Código descargado."
             }
+        }
 
-
-        stage('Lint / Validación') {
+        stage('Lint / Validation') {
             steps {
                 echo "Validando estructura mínima..."
                 sh 'test -f Dockerfile'
                 sh 'test -f docker-compose.yml'
                 sh 'test -f app/index.html'
                 sh 'test -x scripts/test.sh'
-                echo "Validación OK"
+                echo "Validation OK"
             }
         }
 
@@ -41,51 +39,50 @@ pipeline {
             }
         }
 
-        stage('Build Imagen (staging)') {
+        stage('Build Image (Staging)') {
             steps {
                 echo "Construyendo imagen para staging..."
                 sh "docker build -t ${APP_NAME}:staging ."
             }
         }
 
-        stage('Deploy a Staging') {
+        stage('Deploy to Staging') {
             steps {
-                echo "Desplegando en STAGING (puerto ${STAGING_PORT})..."
-                // Levanta/actualiza solo el servicio staging
+                echo "Desplegando en STAGING (port ${STAGING_PORT})..."
                 sh 'docker compose up -d web-staging'
-                echo "Staging actualizado. Verifica en: http://IP-VM:8081"
-                }
-            }
-
-        stage('Aprobación para Producción') {
-            steps {
-                input message: '¿Aprobar despliegue a PRODUCCIÓN?', ok: 'Sí, desplegar'
+                echo "Staging updated. Verify at: http://IP-VM:8081"
             }
         }
 
-        stage('Promover Imagen a Producción') {
+        stage('Approval for Production') {
             steps {
-                echo "Promoviendo imagen a producción..."
+                input message: 'Approve deployment to PRODUCTION?', ok: 'Yes, deploy'
+            }
+        }
+
+        stage('Promote Image to Production') {
+            steps {
+                echo "Promoting image to production..."
                 sh "docker tag ${APP_NAME}:staging ${APP_NAME}:production"
             }
         }
 
-        stage('Deploy a Producción') {
+        stage('Deploy to Production') {
             steps {
-                echo "Desplegando en PRODUCCIÓN (puerto ${PROD_PORT})..."
+                echo "Deploying to PRODUCTION (port ${PROD_PORT})..."
                 sh 'docker compose up -d web-production'
-                echo "Producción actualizada. Verifica en: http://IP-VM:8082"
+                echo "Production updated. Verify at: http://IP-VM:8082"
             }
         }
     }
 
     post {
         success {
-            echo "CI/CD completado con éxito."
+            echo "CI/CD completed successfully."
         }
 
         failure {
-            echo "CI/CD falló. Revisar logs del build."
+            echo "CI/CD failed. Check build logs."
         }
 
         always {
