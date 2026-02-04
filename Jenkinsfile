@@ -8,7 +8,6 @@ pipeline {
     }
 
     options {
-        timestamps()
         disableConcurrentBuilds()
     }
 
@@ -21,68 +20,80 @@ pipeline {
             }
         }
 
-        stage('Lint / Validation') {
+        stage('Validación / Lint') {
             steps {
-                echo "Validando estructura mínima..."
-                sh 'test -f Dockerfile'
-                sh 'test -f docker-compose.yml'
-                sh 'test -f app/index.html'
-                sh 'test -x scripts/test.sh'
-                echo "Validation OK"
+                wrap([$class: 'TimestamperBuildWrapper']) {
+                    echo "Validando estructura mínima..."
+                    sh 'test -f Dockerfile'
+                    sh 'test -f docker-compose.yml'
+                    sh 'test -f app/index.html'
+                    sh 'test -x scripts/test.sh'
+                    echo "Validación OK"
+                }
             }
         }
 
-        stage('Test') {
+        stage('Pruebas') {
             steps {
-                echo "Ejecutando pruebas..."
-                sh './scripts/test.sh'
+                wrap([$class: 'TimestamperBuildWrapper']) {
+                    echo "Ejecutando pruebas..."
+                    sh './scripts/test.sh'
+                }
             }
         }
 
-        stage('Build Image (Staging)') {
+        stage('Construir Imagen (Staging)') {
             steps {
-                echo "Construyendo imagen para staging..."
-                sh "docker build -t ${APP_NAME}:staging ."
+                wrap([$class: 'TimestamperBuildWrapper']) {
+                    echo "Construyendo imagen para staging..."
+                    sh "docker build -t ${APP_NAME}:staging ."
+                }
             }
         }
 
-        stage('Deploy to Staging') {
+        stage('Desplegar a Staging') {
             steps {
-                echo "Desplegando en STAGING (port ${STAGING_PORT})..."
-                sh 'docker compose up -d web-staging'
-                echo "Staging updated. Verify at: http://IP-VM:8081"
+                wrap([$class: 'TimestamperBuildWrapper']) {
+                    echo "Desplegando en STAGING (puerto ${STAGING_PORT})..."
+                    sh 'docker compose up -d web-staging'
+                    echo "Staging actualizado. Verifica en: http://IP-VM:8081"
+                }
             }
         }
 
-        stage('Approval for Production') {
+        stage('Aprobación para Producción') {
             steps {
-                input message: 'Approve deployment to PRODUCTION?', ok: 'Yes, deploy'
+                input message: '¿Aprobar despliegue a PRODUCCIÓN?', ok: 'Sí, desplegar'
             }
         }
 
-        stage('Promote Image to Production') {
+        stage('Promover Imagen a Producción') {
             steps {
-                echo "Promoting image to production..."
-                sh "docker tag ${APP_NAME}:staging ${APP_NAME}:production"
+                wrap([$class: 'TimestamperBuildWrapper']) {
+                    echo "Promoviendo imagen a producción..."
+                    sh "docker tag ${APP_NAME}:staging ${APP_NAME}:production"
+                }
             }
         }
 
-        stage('Deploy to Production') {
+        stage('Desplegar a Producción') {
             steps {
-                echo "Deploying to PRODUCTION (port ${PROD_PORT})..."
-                sh 'docker compose up -d web-production'
-                echo "Production updated. Verify at: http://IP-VM:8082"
+                wrap([$class: 'TimestamperBuildWrapper']) {
+                    echo "Desplegando en PRODUCCIÓN (puerto ${PROD_PORT})..."
+                    sh 'docker compose up -d web-production'
+                    echo "Producción actualizada. Verifica en: http://IP-VM:8082"
+                }
             }
         }
     }
 
     post {
         success {
-            echo "CI/CD completed successfully."
+            echo "CI/CD completado con éxito."
         }
 
         failure {
-            echo "CI/CD failed. Check build logs."
+            echo "CI/CD falló. Revisar logs del build."
         }
 
         always {
